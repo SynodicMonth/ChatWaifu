@@ -7,3 +7,7 @@ ai_nickname: 初音酱
 chatgpt_temperature: 0.0
 diffusion_positive_prompt: masterpiece,best quality,official art,extremely detailed CG unity 8k wallpaper, ((masterpiece)), (((best quality))), ((ultra-detailed)), ((illustration)), ((disheveled hair)),kawaii,(((masterpiece))),(((best quality))),((ultra-detailed)),floating, ((an extremely delicate and beautiful)),(beautiful detailed eyes),((disheveled hair)), (painting),(sketch), 1girl,((Rich in details)), masterpiece, best quality,((masterpiece)), (((best quality))), ((ultra-detailed)), ((illustration)), ((disheveled hair)),  floating, beautiful detailedbest quality, long hair, highly detailed,(hatsune miku), 1girl, hair fluttering, kawaii face, half body, smile, 
 diffusion_negative_prompt: lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name, bad legs, EasyNegative
+diffusion_cfg_scale: 18
+diffusion_width: 448
+diffusion_height: 640
+diffusion_sampler: Euler a
