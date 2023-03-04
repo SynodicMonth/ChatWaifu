@@ -1,0 +1,4 @@
+debug: false
+enable_chatgpt: true
+enable_diffusion: true
+diffusion_steps: 30
