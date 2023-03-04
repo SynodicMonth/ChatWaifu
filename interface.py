@@ -8,6 +8,7 @@ import requests
 import io
 import base64
 import yaml
+import markdown_it
 
 
 # put your openai api key in openai_api_key.txt
@@ -16,6 +17,94 @@ pattern = re.compile(r"\(<(?:[\w,'-]+\s*)+>\)")
 url = "http://127.0.0.1:7861"
 config_path = "./config.yaml"
 default_img = Image.open("./default.png")
+log_file = "./log.txt"
+additional_css = """
+.codehilite { border-radius: 10px; background: #272822; padding: 5px; margin: 5px; }
+code { font-family: consolas; }
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.hll { background-color: #49483e }
+.c { color: #75715e } /* Comment */
+.err { color: #960050; background-color: #1e0010 } /* Error */
+.esc { color: #f8f8f2 } /* Escape */
+.g { color: #f8f8f2 } /* Generic */
+.k { color: #66d9ef } /* Keyword */
+.l { color: #ae81ff } /* Literal */
+.n { color: #f8f8f2 } /* Name */
+.o { color: #f92672 } /* Operator */
+.x { color: #f8f8f2 } /* Other */
+.p { color: #f8f8f2 } /* Punctuation */
+.ch { color: #75715e } /* Comment.Hashbang */
+.cm { color: #75715e } /* Comment.Multiline */
+.cp { color: #75715e } /* Comment.Preproc */ 
+.cpf { color: #75715e } /* Comment.PreprocFile */
+.c1 { color: #75715e } /* Comment.Single */
+.cs { color: #75715e } /* Comment.Special */
+.gd { color: #f92672 } /* Generic.Deleted */
+.ge { color: #f8f8f2; font-style: italic } /* Generic.Emph */
+.gr { color: #f8f8f2 } /* Generic.Error */
+.gh { color: #f8f8f2 } /* Generic.Heading */
+.gi { color: #a6e22e } /* Generic.Inserted */
+.go { color: #66d9ef } /* Generic.Output */
+.gp { color: #f92672; font-weight: bold } /* Generic.Prompt */
+.gs { color: #f8f8f2; font-weight: bold } /* Generic.Strong */
+.gu { color: #75715e } /* Generic.Subheading */
+.gt { color: #f8f8f2 } /* Generic.Traceback */
+.kc { color: #66d9ef } /* Keyword.Constant */
+.kd { color: #66d9ef } /* Keyword.Declaration */
+.kn { color: #f92672 } /* Keyword.Namespace */
+.kp { color: #66d9ef } /* Keyword.Pseudo */
+.kr { color: #66d9ef } /* Keyword.Reserved */
+.kt { color: #66d9ef } /* Keyword.Type */
+.ld { color: #e6db74 } /* Literal.Date */
+.m { color: #ae81ff } /* Literal.Number */
+.s { color: #e6db74 } /* Literal.String */
+.na { color: #a6e22e } /* Name.Attribute */
+.nb { color: #f8f8f2 } /* Name.Builtin */
+.nc { color: #a6e22e } /* Name.Class */
+.no { color: #66d9ef } /* Name.Constant */
+.nd { color: #a6e22e } /* Name.Decorator */
+.ni { color: #f8f8f2 } /* Name.Entity */
+.ne { color: #a6e22e } /* Name.Exception */
+.nf { color: #a6e22e } /* Name.Function */
+.nl { color: #f8f8f2 } /* Name.Label */
+.nn { color: #f8f8f2 } /* Name.Namespace */
+.nx { color: #a6e22e } /* Name.Other */
+.py { color: #f8f8f2 } /* Name.Property */
+.nt { color: #f92672 } /* Name.Tag */
+.nv { color: #f8f8f2 } /* Name.Variable */
+.ow { color: #f92672 } /* Operator.Word */
+.pm { color: #f8f8f2 } /* Punctuation.Marker */
+.w { color: #f8f8f2 } /* Text.Whitespace */
+.mb { color: #ae81ff } /* Literal.Number.Bin */
+.mf { color: #ae81ff } /* Literal.Number.Float */
+.mh { color: #ae81ff } /* Literal.Number.Hex */
+.mi { color: #ae81ff } /* Literal.Number.Integer */
+.mo { color: #ae81ff } /* Literal.Number.Oct */
+.sa { color: #e6db74 } /* Literal.String.Affix */
+.sb { color: #e6db74 } /* Literal.String.Backtick */
+.sc { color: #e6db74 } /* Literal.String.Char */
+.dl { color: #e6db74 } /* Literal.String.Delimiter */
+.sd { color: #e6db74 } /* Literal.String.Doc */
+.s2 { color: #e6db74 } /* Literal.String.Double */
+.se { color: #ae81ff } /* Literal.String.Escape */
+.sh { color: #e6db74 } /* Literal.String.Heredoc */
+.si { color: #e6db74 } /* Literal.String.Interpol */
+.sx { color: #e6db74 } /* Literal.String.Other */
+.sr { color: #e6db74 } /* Literal.String.Regex */
+.s1 { color: #e6db74 } /* Literal.String.Single */
+.ss { color: #e6db74 } /* Literal.String.Symbol */
+.bp { color: #f8f8f2 } /* Name.Builtin.Pseudo */
+.fm { color: #a6e22e } /* Name.Function.Magic */
+.vc { color: #f8f8f2 } /* Name.Variable.Class */
+.vg { color: #f8f8f2 } /* Name.Variable.Global */
+.vi { color: #f8f8f2 } /* Name.Variable.Instance */
+.vm { color: #f8f8f2 } /* Name.Variable.Magic */
+.il { color: #ae81ff } /* Literal.Number.Integer.Long */
+"""
 # config = yaml.load(open(config_path, "r"), Loader=yaml.FullLoader)
 
 def ask_diffusion(pose_desc, config):
@@ -62,6 +151,10 @@ def predict(txt, state, name, config):
                 messages = messages,
                 temperature = config["chatgpt_temperature"])
             response_text = response["choices"][0]['message']['content'].replace('\u000bar', '').replace('\t', '\\t').replace('\r', '\\r').strip()
+            with open(log_file, 'a', encoding='utf-8') as file:
+                file.writelines(['[Time]: ' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) + '\n', 
+                                '[User]: ' + txt + '\n',
+                                '[Response]: ' + response_text + '\n'])
             print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), txt, response_text)
             regex_result = pattern.findall(response_text)
             for text in regex_result:
@@ -75,8 +168,8 @@ def predict(txt, state, name, config):
         if config["enable_diffusion"]:
             img = ask_diffusion(pose_desc, config)
         else:
-            img = Image.new("RGB", (448, 640), (255, 255, 255))
-        # img = Image.open("./00067-3417598286-masterpiece,b.png")
+            # img = Image.new("RGB", (448, 640), (255, 255, 255))
+            img = Image.open("./default.png")
     else:
         response_text = "文本测试 **Markdown测试** $\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}$ 你的名字是：" + name
         # generate a blank image
@@ -88,7 +181,7 @@ def predict(txt, state, name, config):
     return state, state, img
 
 # set up the interface
-with gr.Blocks(title="ChatWaifu", css=r"#chatbot {height: 500px;}") as main_block:
+with gr.Blocks(title="ChatWaifu", css=r"#chatbot {height: 500px;}" + additional_css) as main_block:
     config = gr.State(value=yaml.load(open(config_path, "r", encoding='utf-8'), Loader=yaml.FullLoader))
     with gr.Tabs(elem_id="tabs") as tabs:
         with gr.TabItem(label="Chatting"):
@@ -103,7 +196,7 @@ with gr.Blocks(title="ChatWaifu", css=r"#chatbot {height: 500px;}") as main_bloc
                     # dream = gr.Textbox(show_label=False, placeholder="Only draw image...").style(container=False)
             
                 with gr.Column(scale=0.3):
-                    name = gr.Textbox(label="Your name?", show_label=True, placeholder="想让初音怎么称呼你呢？").style(container=False)
+                    name = gr.Textbox(label="Your name?", show_label=True, placeholder="想让AI怎么称呼你呢？").style(container=False)
                     img = gr.Image(value=default_img, shape=(448, 640), show_label=False, interactive=False)
             txt.submit(predict, [txt, state, name, config], [chat, state, img], show_progress=False, api_name="chatting")
             txt.submit(lambda x: '', [txt], [txt], show_progress=False)
