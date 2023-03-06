@@ -8,7 +8,6 @@ import requests
 import io
 import base64
 import yaml
-import markdown_it
 
 # put your openai api key in openai_api_key.txt
 openai.api_key = open("./openai_api_key.txt", "r").read().strip()
@@ -37,6 +36,8 @@ print("hello world")
  2. list
     1. list
 """
+max_interaction = 5
+
 # notice to be displayed in the interface
 notice = "**工程早期测试阶段alpha-0.3，GPT回复时间大概5s，绘图约为0.5s/step，请耐心等待，不要多次发送，Markdown功能正在开发中，敬请期待。**"
 # additional css file path
@@ -75,22 +76,33 @@ def predict(txt, state, name, config):
             # predict the response
             messages=[
                 {"role": "system","content": config["system_prompt"]},
-                {"role": "user", "content": config["ai_nickname"] + "早上好！"},
-                {"role": "assistant", "content": f"(<school uniform, waving at viewer, smiling, greeting, energetic>) {name}，早上好呀！"},
-                {"role": "user", "content": txt}
+                {"role": "user", "content": config["ai_nickname"] + "你好！"},
+                {"role": "assistant", "content": f"(<school uniform, waving at viewer, smiling, greeting, energetic>) 你好呀，{name}！"},
                 ]
+            if len(state) <= max_interaction:
+                for i in range(len(state)):
+                    messages.append({"role": "user", "content": state[i][0]})
+                    messages.append({"role": "assistant", "content": state[i][1]})
+            else:
+                for i in range(max_interaction):
+                    messages.append({"role": "user", "content": state[-max_interaction + i][0]})
+                    messages.append({"role": "assistant", "content": state[-max_interaction + i][1]})
+            messages.append({"role": "user", "content": txt})
             response = openai.ChatCompletion.create(
                 model = "gpt-3.5-turbo",
                 messages = messages,
                 temperature = config["chatgpt_temperature"])
-            response_text = response["choices"][0]['message']['content'].replace('\u000bar', '').replace('\t', '\\t').replace('\r', '\\r').strip()
+            raw_response = response["choices"][0]['message']['content'].replace('\u000bar', '').replace('\t', '\\t').replace('\r', '\\r').strip()
+            
             # write log
             with open(log_file, 'a', encoding='utf-8') as file:
                 file.writelines(['[Time]: ' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) + '\n', 
                                 '[User]: ' + txt + '\n',
-                                '[Response]: ' + response_text + '\n'])
-            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), txt, response_text)
-            regex_result = pattern.findall(response_text)
+                                '[Response]: ' + raw_response + '\n'])
+            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), txt, raw_response)
+
+            regex_result = pattern.findall(raw_response)
+            response_text = raw_response
             for text in regex_result:
                 response_text = response_text.replace(text, '')
             regex_result = [text[2:-2] for text in regex_result]
