@@ -10,7 +10,6 @@ import base64
 import yaml
 import markdown_it
 
-
 # put your openai api key in openai_api_key.txt
 openai.api_key = open("./openai_api_key.txt", "r").read().strip()
 # regex to find pose_desc
@@ -25,8 +24,9 @@ default_img = Image.open("./default.png")
 log_file = "./log.txt"
 # text to be displayed in debug mode
 debug_text = """
-文本测试 **Markdown测试** 
-$\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}$ 
+文本测试 **Markdown测试** 空集 $\\varnothing$
+$$\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}$$
+
  - list
  - list
     - list
