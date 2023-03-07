@@ -9,8 +9,10 @@ import io
 import base64
 import yaml
 import os
-
+import copy
 # put your openai api key in openai_api_key.txt
+if not os.path.exists("./presets"):
+    raise Exception("Put your openai api key in ./openai_api_key.txt")
 openai.api_key = open("./openai_api_key.txt", "r").read().strip()
 # regex to find pose_desc
 pattern = re.compile(r"\(<(?:[\w,'-]+\s*)+>\)")
@@ -23,10 +25,8 @@ default_img = Image.open("./default.png")
 # log file path
 log_file = "./log.txt"
 # text to be displayed in debug mode
-debug_text = """
-文本测试 **Markdown测试** 空集 $\\varnothing$
-$$\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}$$
-
+debug_text = """文本测试 **Markdown测试** 空集 $\\varnothing$
+$\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}$
  - list
  - list
     - list
@@ -84,7 +84,7 @@ def ask_diffusion(description, config):
         print("diffusion failed, pose_desc:", description)
     return image
 
-def predict(txt, state, name, config):
+def predict(txt, raw_history, name, config):
     if not name:
         name = "朔月"
     if not config["debug"]:
@@ -95,14 +95,14 @@ def predict(txt, state, name, config):
                 {"role": "user", "content": presets[config["character_preset"]]["ai_nickname"] + "你好！"},
                 {"role": "assistant", "content": f"(<school uniform, waving at viewer, smiling, greeting, energetic>) 你好呀，{name}！"},
                 ]
-            if len(state) <= max_interaction:
-                for i in range(len(state)):
-                    messages.append({"role": "user", "content": state[i][0]})
-                    messages.append({"role": "assistant", "content": state[i][1]})
+            if len(raw_history) <= max_interaction:
+                for i in range(len(raw_history)):
+                    messages.append({"role": "user", "content": raw_history[i][0]})
+                    messages.append({"role": "assistant", "content": raw_history[i][1]})
             else:
                 for i in range(max_interaction):
-                    messages.append({"role": "user", "content": state[-max_interaction + i][0]})
-                    messages.append({"role": "assistant", "content": state[-max_interaction + i][1]})
+                    messages.append({"role": "user", "content": raw_history[-max_interaction + i][0]})
+                    messages.append({"role": "assistant", "content": raw_history[-max_interaction + i][1]})
             messages.append({"role": "user", "content": txt})
             response = openai.ChatCompletion.create(
                 model = "gpt-3.5-turbo",
@@ -139,8 +139,8 @@ def predict(txt, state, name, config):
         img_draw = ImageDraw.Draw(img)
         img_draw.text((10, 10), time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), fill=(0, 0, 0))
 
-    state.append((txt, response_text))
-    return state, state, img
+    raw_history.append((txt, response_text))
+    return copy.deepcopy(raw_history), raw_history, img
 
 def clear_state(state, chat):
     return [], []
@@ -154,7 +154,7 @@ if __name__ == "__main__":
         with gr.Tabs(elem_id="tabs") as tabs:
             with gr.TabItem(label="Chatting"):
                 title = gr.Markdown(notice)
-                state = gr.State([])
+                raw_history = gr.State([])
                 with gr.Row():
                     with gr.Column(scale=0.7):
                         chat = gr.Chatbot(elem_id="chatbot")
@@ -162,9 +162,9 @@ if __name__ == "__main__":
                         # dream = gr.Textbox(show_label=False, placeholder="Only draw image...").style(container=False)
                 
                     with gr.Column(scale=0.3):
-                        name = gr.Textbox(label="Your name?", show_label=True, placeholder="想让AI怎么称呼你呢？").style(container=False)
+                        name = gr.Textbox(label="Your name?", show_label=True, placeholder="想让AI怎么称呼你呢？")
                         img = gr.Image(value=default_img, shape=(448, 640), show_label=False, interactive=False)
-                txt.submit(predict, [txt, state, name, config], [chat, state, img], show_progress=False, api_name="chatting")
+                txt.submit(predict, [txt, raw_history, name, config], [chat, raw_history, img], show_progress=False, api_name="chatting")
                 txt.submit(lambda x: '', [txt], [txt], show_progress=False)
 
             with gr.TabItem(label="Setting"):
@@ -213,7 +213,7 @@ if __name__ == "__main__":
                     
                     for component, key in components:
                         component.change(lambda x, config, key=key: config.update({key: x}), [component, config], [], show_progress=False)
-                    dropdown_character.change(clear_state, [state, chat], [state, chat], show_progress=False)
+                    dropdown_character.change(clear_state, [raw_history, chat], [raw_history, chat], show_progress=False)
 
                 button_apply_settings.click(lambda x: x, [config], [json], show_progress=False)
 

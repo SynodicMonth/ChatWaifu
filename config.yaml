@@ -1,3 +1,4 @@
+# Config defaults for the chatbot when starting up
 debug: false
 enable_chatgpt: true
 enable_diffusion: true
