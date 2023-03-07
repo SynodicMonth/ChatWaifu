@@ -1,6 +1,6 @@
 #chatbot {
     min-height: 500px;
-    max-height: 1000px;
+    max-height: 1500px;
 }
 
 .gradio-container-3-20-1 svg {
@@ -31,7 +31,6 @@ code {
     margin: 5px;
     word-wrap: break-word;
     width: 100%;
-    overflow: scroll;
 }
 
 pre {

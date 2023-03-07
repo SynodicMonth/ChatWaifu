@@ -10,6 +10,9 @@ import base64
 import yaml
 import os
 import copy
+import matplotlib
+# use agg backend
+matplotlib.use('agg')
 # put your openai api key in openai_api_key.txt
 if not os.path.exists("./presets"):
     raise Exception("Put your openai api key in ./openai_api_key.txt")
@@ -108,7 +111,7 @@ def predict(txt, raw_history, name, config):
                 model = "gpt-3.5-turbo",
                 messages = messages,
                 temperature = config["chatgpt_temperature"])
-            raw_response = response["choices"][0]['message']['content'].replace('\u000bar', '').replace('\t', '\\t').replace('\r', '\\r').strip()
+            raw_response = response["choices"][0]['message']['content'].replace('\u000bar', '').replace('\t', '\\t').replace('\r', '\\r').strip().replace('$$', '$')
             
             # write log
             with open(log_file, 'a', encoding='utf-8') as file:
