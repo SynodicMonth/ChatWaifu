@@ -35,7 +35,19 @@ $\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}$
  - list
     - list
 ```python
-print("hello world")
+def load_presets():
+    # if there is a directory named "presets", load all the presets
+    if not os.path.exists("./presets"):
+        raise Exception("no presets directory found")
+    else:
+        for file in os.listdir("./presets"):
+            if file.endswith(".yaml"):
+                with open(f"./presets/{file}", "r", encoding='utf-8') as f:
+                    yaml_content = yaml.load(f, Loader=yaml.FullLoader)
+                    presets[yaml_content["id"]] = yaml_content
+        if len(presets) == 0:
+            raise Exception("no presets found, please put yaml files in the presets directory")
+    print(f"loaded {len(presets)} presets")
 ```
  1. list
  2. list

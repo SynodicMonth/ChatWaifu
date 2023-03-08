@@ -31,24 +31,39 @@ def my_get_markdown_parser() -> MarkdownIt:
         tokens[idx].attrSet("target", "_blank")
         return self.renderToken(tokens, idx, options, env)
 
+    def parse_fencecode(self, tokens, idx, options, env):
+        token = tokens[idx]
+        # print(token)
+        try:
+            # print(token.attrs)
+            lexer = get_lexer_by_name(token.info)
+        except pygments.util.ClassNotFound:
+            lexer = guess_lexer(token.content)
+        formatter = HtmlFormatter()
+        parsed_code = pygments.highlight(token.content, lexer, formatter)
+        return "<pre><code>" + parsed_code + "</code></pre>"
+        
     md.add_render_rule("link_open", render_blank_link)
+    md.add_render_rule("fence", parse_fencecode)
+    # print(md.get_active_rules())
+    # .fence.parse = parse_fencecode
 
     return md
 
-def parse_fencecode(raw):
-    regex = r"```(.*?)\n(.*?\n*)```"
-    matches = re.findall(regex, raw, re.DOTALL)
-    # print(matches)
-    for language, code in matches:
-        try:
-            lexer = get_lexer_by_name(language)
-        except pygments.util.ClassNotFound:
-            lexer = guess_lexer(code)
-        formatter = HtmlFormatter()
-        parsed_code = pygments.highlight(code.rstrip(), lexer, formatter).strip()
-        raw = raw.replace(f"```{language}\n{code}```\n", parsed_code)
-    # print(raw)
-    return raw
+# def parse_fencecode(raw):
+#     regex = r"```(.*?)\n(.*?\n*)```"
+#     matches = re.findall(regex, raw, re.DOTALL)
+#     # print(matches)
+#     for language, code in matches:
+#         try:
+#             lexer = get_lexer_by_name(language)
+#         except pygments.util.ClassNotFound:
+#             lexer = guess_lexer(code)
+#         formatter = HtmlFormatter()
+#         parsed_code = pygments.highlight(code.rstrip(), lexer, formatter).strip()
+#         raw = raw.replace(f"```{language}\n{code}```\n", parsed_code)
+#     # print(raw)
+#     return raw
 
 
 class MyChatbot(Chatbot):
@@ -57,8 +72,8 @@ class MyChatbot(Chatbot):
         self.md = my_get_markdown_parser()
 
     def postprocess(
-        self, y: List[Tuple[str | None, str | None]]
-    ) -> List[Tuple[str | None, str | None]]:
+        self, y: List[Tuple[str, str]]
+    ) -> List[Tuple[str, str]]:
         """
         Parameters:
             y: List of tuples representing the message and response pairs. Each message and response should be a string, which may be in Markdown format.
@@ -69,10 +84,15 @@ class MyChatbot(Chatbot):
             return []
         for i, (message, response) in enumerate(y):
             y[i] = (
-                None if message is None else self.md.renderInline(parse_fencecode(message)),
-                None if response is None else self.md.renderInline(parse_fencecode(response)),
+                None if message is None else self.md.render(message),
+                None if response is None else self.md.render(response),
             )
         return y
     
     def get_block_name(self) -> str:
         return "chatbot"
+
+# if __name__ == "__main__":
+#     md = my_get_markdown_parser()
+#     ht = md.render("```python\nprint('hello world')\n```")
+#     print(ht)
