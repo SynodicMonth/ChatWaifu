@@ -10,10 +10,8 @@ import base64
 import yaml
 import os
 import copy
-import matplotlib
 from mychatbot import MyChatbot
-# use agg backend
-matplotlib.use('agg')
+
 # put your openai api key in openai_api_key.txt
 if not os.path.exists("./presets"):
     raise Exception("Put your openai api key in ./openai_api_key.txt")
@@ -103,7 +101,13 @@ def ask_diffusion(description, config):
 def predict(txt, raw_history, name, config):
     if not name:
         name = "朔月"
-    if not config["debug"]:
+    if config["debug"]: # debug mode
+        response_text = debug_text + "你的名字是：" + name
+        # generate a blank image with time
+        img = Image.new("RGB", (448, 640), (255, 255, 255))
+        img_draw = ImageDraw.Draw(img)
+        img_draw.text((10, 10), time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), fill=(0, 0, 0))
+    else:
         if config["enable_chatgpt"]:
             # predict the response
             messages=[
@@ -120,41 +124,46 @@ def predict(txt, raw_history, name, config):
                     messages.append({"role": "user", "content": raw_history[-max_interaction + i][0]})
                     messages.append({"role": "assistant", "content": raw_history[-max_interaction + i][1]})
             messages.append({"role": "user", "content": txt})
-            response = openai.ChatCompletion.create(
-                model = "gpt-3.5-turbo",
-                messages = messages,
-                temperature = config["chatgpt_temperature"])
-            # print(response)
-            raw_response = response["choices"][0]['message']['content'].replace('\u000bar', '').replace('\t', '\\t').replace('\r', '\\r').strip().replace('$$', '$')
-            
-            # write log
-            with open(log_file, 'a', encoding='utf-8') as file:
-                file.writelines(['[Time]: ' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) + '\n', 
-                                '[User]: ' + txt + '\n',
-                                '[Response]: ' + raw_response + '\n'])
-            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), txt, raw_response)
+            try:
+                response = openai.ChatCompletion.create(
+                    model = "gpt-3.5-turbo",
+                    messages = messages,
+                    temperature = config["chatgpt_temperature"])
+                # print(response)
+                raw_response = response["choices"][0]['message']['content'].replace('\u000bar', '').replace('\t', '\\t').replace('\r', '\\r').strip().replace('$$', '$')
+                
+                # write log
+                with open(log_file, 'a', encoding='utf-8') as file:
+                    file.writelines(['[Time]: ' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) + '\n', 
+                                    '[User]: ' + txt + '\n',
+                                    '[Response]: ' + raw_response + '\n'])
+                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), txt, raw_response)
 
-            regex_result = pattern.findall(raw_response)
-            response_text = raw_response
-            for text in regex_result:
-                response_text = response_text.replace(text, '')
-            regex_result = [text[2:-2] for text in regex_result]
-            pose_desc = ''.join(regex_result)
+                regex_result = pattern.findall(raw_response)
+                response_text = raw_response
+                for text in regex_result:
+                    response_text = response_text.replace(text, '')
+                regex_result = [text[2:-2] for text in regex_result]
+                pose_desc = ''.join(regex_result)
+            except Exception as e:
+                print(e)
+                response_text = str(e)
+                pose_desc = ""
         else:
             pose_desc = txt
             response_text = "~"
         
         if config["enable_diffusion"]:
-            img = ask_diffusion(pose_desc, config)
+            try:
+                img = ask_diffusion(pose_desc, config)
+            except Exception as e:
+                print(e)
+                img = Image.new("RGB", (448, 640), (255, 255, 255))
+                img_draw = ImageDraw.Draw(img)
+                img_draw.text((10, 10), str(e), fill=(0, 0, 0))
         else:
             # img = Image.new("RGB", (448, 640), (255, 255, 255))
             img = Image.open("./default.png")
-    else:
-        response_text = debug_text + "你的名字是：" + name
-        # generate a blank image with time
-        img = Image.new("RGB", (448, 640), (255, 255, 255))
-        img_draw = ImageDraw.Draw(img)
-        img_draw.text((10, 10), time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), fill=(0, 0, 0))
 
     raw_history.append((txt, response_text))
     return copy.deepcopy(raw_history), raw_history, img
@@ -235,4 +244,4 @@ if __name__ == "__main__":
                 button_apply_settings.click(lambda x: x, [config], [json], show_progress=False)
 
     # Link Start!!!!!!!!
-    main_block.launch(server_name="0.0.0.0")
+    main_block.launch(server_name="0.0.0.0", share=True)
