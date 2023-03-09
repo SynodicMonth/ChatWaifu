@@ -11,6 +11,7 @@ import yaml
 import os
 import copy
 import matplotlib
+from mychatbot import MyChatbot
 # use agg backend
 matplotlib.use('agg')
 # put your openai api key in openai_api_key.txt
@@ -40,7 +41,7 @@ print("hello world")
  2. list
     1. list
 """
-max_interaction = 5
+max_interaction = 3
 
 # notice to be displayed in the interface
 notice = "**工程早期测试阶段alpha-0.4，GPT回复时间大概5s，绘图约为0.5s/step，请耐心等待，不要多次发送，代码高亮已经实现，latex还未实现，敬请期待。**"
@@ -111,6 +112,7 @@ def predict(txt, raw_history, name, config):
                 model = "gpt-3.5-turbo",
                 messages = messages,
                 temperature = config["chatgpt_temperature"])
+            # print(response)
             raw_response = response["choices"][0]['message']['content'].replace('\u000bar', '').replace('\t', '\\t').replace('\r', '\\r').strip().replace('$$', '$')
             
             # write log
@@ -160,7 +162,7 @@ if __name__ == "__main__":
                 raw_history = gr.State([])
                 with gr.Row():
                     with gr.Column(scale=0.7):
-                        chat = gr.Chatbot(elem_id="chatbot")
+                        chat = MyChatbot(elem_id="chatbot")
                         txt = gr.Textbox(show_label=False, placeholder="Type here...").style(container=False)
                         # dream = gr.Textbox(show_label=False, placeholder="Only draw image...").style(container=False)
                 
