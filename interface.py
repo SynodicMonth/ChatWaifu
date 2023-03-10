@@ -23,7 +23,7 @@ url = "http://127.0.0.1:7861"
 # config file path
 config_path = "./config.yaml"
 # default image when no image is provided
-default_img = Image.open("./default.png")
+default_img = Image.open("./pics/default.png")
 # log file path
 log_file = "./log.txt"
 # text to be displayed in debug mode
