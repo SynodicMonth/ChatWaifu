@@ -25,15 +25,12 @@ pre {
 }
 
 code {
-    display: inline-flex;
+    display: inline;
     color: white;
     font-family: consolas;
     border-radius: 10px;
     background: #272822;
     padding: 5px;
-    margin: 5px;
-    word-wrap: break-word;
-    width: 100%;
 }
 
 pre {

@@ -43,3 +43,4 @@ if __name__ == "__main__":
     example = ("晚上好！", "晚上好啊~")
     history = [("我叫AAA", "你好AAA")]
     print(ask_chatgpt(system_prompt, "你好", example, history))
+    print(ask_chatgpt(system_prompt, "Hello"))

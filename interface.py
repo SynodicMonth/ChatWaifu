@@ -11,6 +11,7 @@ import yaml
 import os
 import copy
 from mychatbot import MyChatbot
+from chatgpt import ask_chatgpt
 
 # put your openai api key in openai_api_key.txt
 if not os.path.exists("./presets"):
@@ -98,6 +99,12 @@ def ask_diffusion(description, config):
         print("diffusion failed, pose_desc:", description)
     return image
 
+def write_log(log_file: str, user_text: str, response_text: str):
+    with open(log_file, 'a', encoding='utf-8') as file:
+        file.writelines(['[Time]: ' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) + '\n', 
+                        '[User]: ' + user_text + '\n',
+                        '[Response]: ' + response_text + '\n'])
+    
 def predict(txt, raw_history, name, config):
     if not name:
         name = "朔月"
@@ -110,33 +117,15 @@ def predict(txt, raw_history, name, config):
     else:
         if config["enable_chatgpt"]:
             # predict the response
-            messages=[
-                {"role": "system","content": presets[config["character_preset"]]["system_prompt"]},
-                {"role": "user", "content": presets[config["character_preset"]]["ai_nickname"] + "你好！"},
-                {"role": "assistant", "content": f"(<school uniform, waving at viewer, smiling, greeting, energetic>) 你好呀，{name}！"},
-                ]
-            if len(raw_history) <= max_interaction:
-                for i in range(len(raw_history)):
-                    messages.append({"role": "user", "content": raw_history[i][0]})
-                    messages.append({"role": "assistant", "content": raw_history[i][1]})
-            else:
-                for i in range(max_interaction):
-                    messages.append({"role": "user", "content": raw_history[-max_interaction + i][0]})
-                    messages.append({"role": "assistant", "content": raw_history[-max_interaction + i][1]})
-            messages.append({"role": "user", "content": txt})
+            system_prompt = presets[config["character_preset"]]["system_prompt"]
+            example = (presets[config["character_preset"]]["ai_nickname"] + "你好！",
+                       f"(<school uniform, waving at viewer, smiling, greeting, energetic>) 你好呀，{name}！")
+            history = raw_history[-max_interaction:] if len(raw_history) > max_interaction else raw_history
+            temperature = config["chatgpt_temperature"]
             try:
-                response = openai.ChatCompletion.create(
-                    model = "gpt-3.5-turbo",
-                    messages = messages,
-                    temperature = config["chatgpt_temperature"])
-                # print(response)
-                raw_response = response["choices"][0]['message']['content'].replace('\u000bar', '').replace('\t', '\\t').replace('\r', '\\r').strip().replace('$$', '$')
-                
+                raw_response = ask_chatgpt(system_prompt, txt, example, history, temperature)
                 # write log
-                with open(log_file, 'a', encoding='utf-8') as file:
-                    file.writelines(['[Time]: ' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) + '\n', 
-                                    '[User]: ' + txt + '\n',
-                                    '[Response]: ' + raw_response + '\n'])
+                write_log(log_file, txt, raw_response)
                 print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), txt, raw_response)
 
                 regex_result = pattern.findall(raw_response)
