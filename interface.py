@@ -51,7 +51,7 @@ def load_presets():
  2. list
     1. list
 """
-max_interaction = 3
+max_interaction = 5
 
 # notice to be displayed in the interface
 notice = "**工程早期测试阶段alpha-0.4，GPT回复时间大概5s，绘图约为0.5s/step，请耐心等待，不要多次发送，代码高亮已经实现，latex还未实现，敬请期待。**"
