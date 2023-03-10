@@ -160,10 +160,10 @@ def predict(txt, raw_history, name, config):
                 print(e)
                 img = Image.new("RGB", (448, 640), (255, 255, 255))
                 img_draw = ImageDraw.Draw(img)
-                img_draw.text((10, 10), str(e), fill=(0, 0, 0))
+                img_draw.text((10, 10), str(e), fill=(0, 0, 0), language='zh')
         else:
             # img = Image.new("RGB", (448, 640), (255, 255, 255))
-            img = Image.open("./default.png")
+            img = default_img
 
     raw_history.append((txt, response_text))
     return copy.deepcopy(raw_history), raw_history, img
@@ -244,4 +244,4 @@ if __name__ == "__main__":
                 button_apply_settings.click(lambda x: x, [config], [json], show_progress=False)
 
     # Link Start!!!!!!!!
-    main_block.launch(server_name="0.0.0.0", share=True)
+    main_block.launch(server_name="0.0.0.0")
