@@ -1,7 +1,7 @@
 # Config defaults for the chatbot when starting up
 debug: false
 enable_chatgpt: true
-enable_diffusion: true
+enable_diffusion: false
 diffusion_steps: 30
 chatgpt_temperature: 0.0
 diffusion_cfg_scale: 18
