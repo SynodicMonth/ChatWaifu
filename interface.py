@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 # gradio chat interface
 import gradio as gr
 import openai
