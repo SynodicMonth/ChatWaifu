@@ -76,29 +76,7 @@ def load_presets():
     print(f"loaded {len(presets)} presets")
 
 def ask_diffusion(description, config):
-    prompt = presets[config["character_preset"]]["diffusion_positive_prompt"] + '(((' + description + ')))'
-    negative_prompt = presets[config["character_preset"]]["diffusion_negative_prompt"]
-    payload = {
-        "prompt": prompt,
-        "negative_prompt": negative_prompt,
-        "steps": config["diffusion_steps"],
-        "cfg_scale": config["diffusion_cfg_scale"],
-        "width": config["diffusion_width"],
-        "height": config["diffusion_height"],
-        "sampler_index": config["diffusion_sampler"],
-    }
-    sd_response = requests.post(url=f'{url}/sdapi/v1/txt2img', json=payload)
-    r = sd_response.json()
-    if 'images' in r:
-        image = Image.open(io.BytesIO(base64.b64decode(r['images'][0].split(",",1)[0])))
-        print("diffusion solved, pose_desc:", description)
-    else:
-        # generate a error image
-        image = Image.new("RGB", (448, 640), (255, 255, 255))
-        img_draw = ImageDraw.Draw(image)
-        img_draw.text((10, 10), "ERROR", fill=(0, 0, 0))
-        print("diffusion failed, pose_desc:", description)
-    return image
+    return default_img
 
 def write_log(log_file: str, user_text: str, response_text: str):
     with open(log_file, 'a', encoding='utf-8') as file:
