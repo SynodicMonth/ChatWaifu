@@ -78,7 +78,7 @@ def my_get_markdown_parser() -> MarkdownIt:
             lexer = guess_lexer(token.content)
         formatter = HtmlFormatter()
         parsed_code = pygments.highlight(token.content, lexer, formatter)
-        return "<pre><code>" + parsed_code + "</code></pre>"
+        return "<pre>" + parsed_code + "</pre>"
         
     md.add_render_rule("link_open", render_blank_link)
     md.add_render_rule("fence", parse_fencecode)
