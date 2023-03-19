@@ -1,5 +1,6 @@
 import openai
 from typing import List, Dict, Any, Tuple
+import requests
 
 def ask_chatgpt(system_prompt: str, txt: str, example: List[Tuple[str, str]] = None,
                 history: List[Tuple[str, str]] = None, temperature: float = 0.0) -> str:
@@ -36,6 +37,25 @@ def ask_chatgpt(system_prompt: str, txt: str, example: List[Tuple[str, str]] = N
         temperature = temperature)
     
     return response["choices"][0]['message']['content']
+
+def ask_spellbook(text, history):
+    history_str = ""
+    for usr, bot in history:
+        history_str += f"User: {usr}\n"
+        history_str += f"Bot: {bot}\n"
+    data = {
+    "input": {
+        "history": history_str,
+        "text": text
+    }
+    }
+    headers = {"Authorization":"Basic clfb5usro005jyc1axmg8tgif"}
+    response = requests.post(
+    "https://dashboard.scale.com/spellbook/api/v2/deploy/jg1024j8",
+    json=data,
+    headers=headers
+    )
+    return response.json()["output"]
 
 if __name__ == "__main__":
     openai.api_key_path = "openai_api_key.txt"

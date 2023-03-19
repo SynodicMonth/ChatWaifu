@@ -12,14 +12,14 @@ import yaml
 import os
 import copy
 from mychatbot import MyChatbot
-from chatgpt import ask_chatgpt
+from chatgpt import ask_chatgpt, ask_spellbook
 
 # put your openai api key in openai_api_key.txt
 if not os.path.exists("./presets"):
     raise Exception("Put your openai api key in ./openai_api_key.txt")
 openai.api_key = open("./openai_api_key.txt", "r").read().strip()
 # regex to find pose_desc
-pattern = re.compile(r"\(<(?:[\w,'-]+\s*)+>\)")
+pattern = re.compile(r"\(<.*>\)")
 # url of the diffusion webui server
 url = "http://127.0.0.1:7861"
 # config file path
@@ -76,7 +76,30 @@ def load_presets():
     print(f"loaded {len(presets)} presets")
 
 def ask_diffusion(description, config):
-    return default_img
+    print("toggled")
+    prompt = presets[config["character_preset"]]["diffusion_positive_prompt"] + '(((' + description + ')))'
+    negative_prompt = presets[config["character_preset"]]["diffusion_negative_prompt"]
+    payload = {
+        "prompt": prompt,
+        "negative_prompt": negative_prompt,
+        "steps": config["diffusion_steps"],
+        "cfg_scale": config["diffusion_cfg_scale"],
+        "width": config["diffusion_width"],
+        "height": config["diffusion_height"],
+        "sampler_index": config["diffusion_sampler"],
+    }
+    sd_response = requests.post(url=f'{url}/sdapi/v1/txt2img', json=payload)
+    r = sd_response.json()
+    if 'images' in r:
+        image = Image.open(io.BytesIO(base64.b64decode(r['images'][0].split(",",1)[0])))
+        print("diffusion solved, pose_desc:", description)
+    else:
+        # generate a error image
+        image = Image.new("RGB", (448, 640), (255, 255, 255))
+        img_draw = ImageDraw.Draw(image)
+        img_draw.text((10, 10), "ERROR", fill=(0, 0, 0))
+        print("diffusion failed, pose_desc:", description)
+    return image
 
 def write_log(log_file: str, user_text: str, response_text: str):
     with open(log_file, 'a', encoding='utf-8') as file:
@@ -96,27 +119,29 @@ def predict(txt, raw_history, name, config):
     else:
         if config["enable_chatgpt"]:
             # predict the response
-            system_prompt = presets[config["character_preset"]]["system_prompt"]
-            example = (presets[config["character_preset"]]["ai_nickname"] + "你好！",
-                       f"(<school uniform, waving at viewer, smiling, greeting, energetic>) 你好呀，{name}！")
+            # system_prompt = presets[config["character_preset"]]["system_prompt"]
+            # example = (presets[config["character_preset"]]["ai_nickname"] + "你好！",
+            #            f"(<school uniform, waving at viewer, smiling, greeting, energetic>) 你好呀，{name}！")
             history = raw_history[-max_interaction:] if len(raw_history) > max_interaction else raw_history
-            temperature = config["chatgpt_temperature"]
-            try:
-                raw_response = ask_chatgpt(system_prompt, txt, example, history, temperature)
-                # write log
-                write_log(log_file, txt, raw_response)
-                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), txt, raw_response)
+            # temperature = config["chatgpt_temperature"]
+            # try:
+            # raw_response = ask_chatgpt(system_prompt, txt, example, history, temperature)
+            raw_response = ask_spellbook(txt, history)
+            # write log
+            write_log(log_file, txt, raw_response)
+            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), txt, raw_response)
 
-                regex_result = pattern.findall(raw_response)
-                response_text = raw_response
-                for text in regex_result:
-                    response_text = response_text.replace(text, '')
-                regex_result = [text[2:-2] for text in regex_result]
-                pose_desc = ''.join(regex_result)
-            except Exception as e:
-                print(e)
-                response_text = str(e)
-                pose_desc = ""
+            regex_result = pattern.findall(raw_response)
+            print(regex_result)
+            response_text = raw_response
+            for text in regex_result:
+                response_text = response_text.replace(text, '')
+            regex_result = [text[2:-2] for text in regex_result]
+            pose_desc = ''.join(regex_result)
+            # except Exception as e:
+            #     print(e)
+            #     response_text = str(e)
+            #     pose_desc = ""
         else:
             pose_desc = txt
             response_text = "~"
