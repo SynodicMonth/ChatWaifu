@@ -30,12 +30,19 @@ def ask_chatgpt(system_prompt: str, txt: str, example: List[Tuple[str, str]] = N
             messages.append({"role": "user", "content": history[i][0]})
             messages.append({"role": "assistant", "content": history[i][1]})
     messages.append({"role": "user", "content": txt})
+    print(messages)
     response=openai.ChatCompletion.create(
-        model = "gpt-3.5-turbo",
+        model = "gpt-4",
         messages = messages,
-        temperature = temperature)
+        temperature = temperature,
+        stream=True)
     
-    return response["choices"][0]['message']['content']
+    # streamed_response = ''
+    # for chunk in response:
+    #     streamed_response += chunk['choices'][0]['delta']['content']
+    #     return streamed_response
+    
+    return response
 
 if __name__ == "__main__":
     openai.api_key_path = "openai_api_key.txt"

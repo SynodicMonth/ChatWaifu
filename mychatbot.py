@@ -91,28 +91,28 @@ class MyChatbot(Chatbot):
         super().__init__(*args, **kwargs)
         self.md = my_get_markdown_parser()
 
-    def postprocess(
-        self, y: List[Tuple[str, str]]
-    ) -> List[Tuple[str, str]]:
-        """
-        Parameters:
-            y: List of tuples representing the message and response pairs. Each message and response should be a string, which may be in Markdown format.
-        Returns:
-            List of tuples representing the message and response. Each message and response will be a string of HTML.
-        """
-        if y is None:
-            return []
-        for i, (message, response) in enumerate(y):
-            try:
-                a = None if message is None else self.md.render(message)
-            except:
-                a = message
-            try:
-                b = None if response is None else self.md.render(response)
-            except:
-                b = response
-            y[i] = (a, b)
-        return y
+    # def postprocess(
+    #     self, y: List[Tuple[str, str]]
+    # ) -> List[Tuple[str, str]]:
+    #     """
+    #     Parameters:
+    #         y: List of tuples representing the message and response pairs. Each message and response should be a string, which may be in Markdown format.
+    #     Returns:
+    #         List of tuples representing the message and response. Each message and response will be a string of HTML.
+    #     """
+    #     if y is None:
+    #         return []
+    #     for i, (message, response) in enumerate(y):
+    #         try:
+    #             a = None if message is None else self.md.render(message)
+    #         except:
+    #             a = message
+    #         try:
+    #             b = None if response is None else self.md.render(response)
+    #         except:
+    #             b = response
+    #         y[i] = (a, b)
+    #     return y
     
     def get_block_name(self) -> str:
         return "chatbot"

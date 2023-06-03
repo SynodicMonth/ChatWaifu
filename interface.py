@@ -56,7 +56,7 @@ def load_presets():
 max_interaction = 5
 
 # notice to be displayed in the interface
-notice = "**工程早期测试阶段alpha-0.4，GPT回复时间大概5s，绘图约为0.5s/step，请耐心等待，不要多次发送，代码高亮已经实现，latex还未实现，敬请期待。**"
+notice = "**工程早期测试阶段alpha-0.5，GPT回复时间大概5s。**"
 # additional css file path
 additional_css = "./additional.css"
 presets = {}
@@ -84,9 +84,8 @@ def write_log(log_file: str, user_text: str, response_text: str):
                         '[User]: ' + user_text + '\n',
                         '[Response]: ' + response_text + '\n'])
     
-def predict(txt, raw_history, name, config):
-    if not name:
-        name = "朔月"
+def predict(txt, raw_history, chat, config):
+    name = "朔月"
     if config["debug"]: # debug mode
         response_text = debug_text + "你的名字是：" + name
         # generate a blank image with time
@@ -94,50 +93,45 @@ def predict(txt, raw_history, name, config):
         img_draw = ImageDraw.Draw(img)
         img_draw.text((10, 10), time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), fill=(0, 0, 0))
     else:
-        if config["enable_chatgpt"]:
-            # predict the response
-            system_prompt = presets[config["character_preset"]]["system_prompt"]
-            example = (presets[config["character_preset"]]["ai_nickname"] + "你好！",
-                       f"(<school uniform, waving at viewer, smiling, greeting, energetic>) 你好呀，{name}！")
-            history = raw_history[-max_interaction:] if len(raw_history) > max_interaction else raw_history
-            temperature = config["chatgpt_temperature"]
-            try:
-                raw_response = ask_chatgpt(system_prompt, txt, example, history, temperature)
-                # write log
-                write_log(log_file, txt, raw_response)
-                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), txt, raw_response)
+        # predict the response
+        system_prompt = presets[config["character_preset"]]["system_prompt"]
+        example = (presets[config["character_preset"]]["ai_nickname"] + "你好！",
+                    f"你好呀，{name}！")
+        history = raw_history[-max_interaction:] if len(raw_history) > max_interaction else raw_history[:]
+        temperature = config["chatgpt_temperature"]
+        # try:
+        response_text = ask_chatgpt(system_prompt, txt, example, history, temperature)
+        # write log
+        # write_log(log_file, txt, raw_response)
+        # print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), txt, raw_response)
 
-                regex_result = pattern.findall(raw_response)
-                response_text = raw_response
-                for text in regex_result:
-                    response_text = response_text.replace(text, '')
-                regex_result = [text[2:-2] for text in regex_result]
-                pose_desc = ''.join(regex_result)
-            except Exception as e:
-                print(e)
-                response_text = str(e)
-                pose_desc = ""
-        else:
-            pose_desc = txt
-            response_text = "~"
-        
-        if config["enable_diffusion"]:
-            try:
-                img = ask_diffusion(pose_desc, config)
-            except Exception as e:
-                print(e)
-                img = Image.new("RGB", (448, 640), (255, 255, 255))
-                img_draw = ImageDraw.Draw(img)
-                img_draw.text((10, 10), str(e), fill=(0, 0, 0), language='zh')
-        else:
-            # img = Image.new("RGB", (448, 640), (255, 255, 255))
-            img = default_img
+        # regex_result = pattern.findall(raw_response)
+        # response_text = raw_response
+        # for text in regex_result:
+        #     response_text = response_text.replace(text, '')
+        # regex_result = [text[2:-2] for text in regex_result]
+        # pose_desc = ''.join(regex_result)
+        # except Exception as e:
+        #     print(e)
+        #     print("chatgpt failed, use mychatbot instead")
+        #     response_text = str(e)
+        #     pose_desc = ""
 
-    raw_history.append((txt, response_text))
-    return copy.deepcopy(raw_history), raw_history, img
+    chat[-1][1] = ''
+    for chunk in response_text:
+        chat[-1] = [chat[-1][0], chat[-1][1]
+                            + chunk['choices'][0]['delta'].get('content', '')]
+        yield raw_history, chat
+    raw_history.append([chat[-1][0], chat[-1][1]])
+    yield raw_history, chat
+    
 
-def clear_state(state, chat):
-    return [], []
+def clear_state(chat):
+    return []
+
+def user(user_message, history):
+    print(user_message)
+    return user_message, history + [[user_message, None]]
 
 if __name__ == "__main__":
     # load presets
@@ -147,19 +141,21 @@ if __name__ == "__main__":
         config = gr.State(value=yaml.load(open(config_path, "r", encoding='utf-8'), Loader=yaml.FullLoader))
         with gr.Tabs(elem_id="tabs") as tabs:
             with gr.TabItem(label="Chatting"):
-                title = gr.Markdown(notice)
+                # title = gr.Markdown(notice)
                 raw_history = gr.State([])
                 with gr.Row():
-                    with gr.Column(scale=0.7):
+                    with gr.Column():
                         chat = MyChatbot(elem_id="chatbot")
                         txt = gr.Textbox(show_label=False, placeholder="Type here...").style(container=False)
                         # dream = gr.Textbox(show_label=False, placeholder="Only draw image...").style(container=False)
                 
-                    with gr.Column(scale=0.3):
-                        name = gr.Textbox(label="Your name?", show_label=True, placeholder="想让AI怎么称呼你呢？")
-                        img = gr.Image(value=default_img, shape=(448, 640), show_label=False, interactive=False)
-                txt.submit(predict, [txt, raw_history, name, config], [chat, raw_history, img], show_progress=False, api_name="chatting")
-                txt.submit(lambda x: '', [txt], [txt], show_progress=False)
+                    # with gr.Column(scale=0.3):
+                    #     name = gr.Textbox(label="Your name?", show_label=True, placeholder="想让AI怎么称呼你呢？")
+                    #     img = gr.Image(value=default_img, shape=(448, 640), show_label=False, interactive=False)
+                response = txt.submit(user, [txt, chat], [txt, chat], queue=False).then(
+                    predict, [txt, raw_history, chat, config], [raw_history, chat], 
+                )
+                # response.then(lambda: gr.update(interactive=True), None, [txt], queue=False)
 
             with gr.TabItem(label="Setting"):
                 title = gr.Markdown("**设置**")
@@ -207,9 +203,10 @@ if __name__ == "__main__":
                     
                     for component, key in components:
                         component.change(lambda x, config, key=key: config.update({key: x}), [component, config], [], show_progress=False)
-                    dropdown_character.change(clear_state, [raw_history, chat], [raw_history, chat], show_progress=False)
+                    dropdown_character.change(clear_state, [chat], [chat], show_progress=False)
 
                 button_apply_settings.click(lambda x: x, [config], [json], show_progress=False)
 
     # Link Start!!!!!!!!
-    main_block.launch(server_name="0.0.0.0")
+    main_block.queue()
+    main_block.launch(server_name="0.0.0.0", port=8889)
