@@ -1,13 +1,13 @@
 from gradio.components import Chatbot
-from markdown_it import MarkdownIt
-from markdown_it import MarkdownIt
-from mdit_py_plugins.dollarmath.index import dollarmath_plugin
-from mdit_py_plugins.footnote.index import footnote_plugin
+# from markdown_it import MarkdownIt
+# from markdown_it import MarkdownIt
+# from mdit_py_plugins.dollarmath.index import dollarmath_plugin
+# from mdit_py_plugins.footnote.index import footnote_plugin
 from typing import List, Tuple
 import re
-import pygments
-from pygments.lexers import get_lexer_by_name, guess_lexer
-from pygments.formatters import HtmlFormatter
+# import pygments
+# from pygments.lexers import get_lexer_by_name, guess_lexer
+# from pygments.formatters import HtmlFormatter
 import matplotlib.pyplot as plt
 import matplotlib
 from io import BytesIO
@@ -47,49 +47,49 @@ def tex2svg(formula, *args):
     copy_code = f"<span style='font-size: 0px'>{formula}</span>"
     return f"{copy_code}{svg_code}"
 
-def my_get_markdown_parser() -> MarkdownIt:
-    md = (
-        MarkdownIt(
-            "js-default",
-            {
-                "linkify": True,
-                "typographer": True,
-                "html": True,
-                "breaks": True,
-            },
-        )
-        .use(dollarmath_plugin, renderer=tex2svg, allow_digits=False)
-        .use(footnote_plugin)
-        .enable("table")
-    )
+# def my_get_markdown_parser() -> MarkdownIt:
+#     md = (
+#         MarkdownIt(
+#             "js-default",
+#             {
+#                 "linkify": True,
+#                 "typographer": True,
+#                 "html": True,
+#                 "breaks": True,
+#             },
+#         )
+#         .use(dollarmath_plugin, renderer=tex2svg, allow_digits=False)
+#         .use(footnote_plugin)
+#         .enable("table")
+#     )
 
-    # Add target="_blank" to all links. Taken from MarkdownIt docs: https://github.com/executablebooks/markdown-it-py/blob/master/docs/architecture.md
-    def render_blank_link(self, tokens, idx, options, env):
-        tokens[idx].attrSet("target", "_blank")
-        return self.renderToken(tokens, idx, options, env)
+#     # Add target="_blank" to all links. Taken from MarkdownIt docs: https://github.com/executablebooks/markdown-it-py/blob/master/docs/architecture.md
+#     def render_blank_link(self, tokens, idx, options, env):
+#         tokens[idx].attrSet("target", "_blank")
+#         return self.renderToken(tokens, idx, options, env)
 
-    def parse_fencecode(self, tokens, idx, options, env):
-        token = tokens[idx]
-        # print(token)
-        try:
-            # print(token.attrs)
-            lexer = get_lexer_by_name(token.info)
-        except pygments.util.ClassNotFound:
-            lexer = guess_lexer(token.content)
-        formatter = HtmlFormatter()
-        parsed_code = pygments.highlight(token.content, lexer, formatter)
-        return "<pre>" + parsed_code + "</pre>"
+#     def parse_fencecode(self, tokens, idx, options, env):
+#         token = tokens[idx]
+#         # print(token)
+#         try:
+#             # print(token.attrs)
+#             lexer = get_lexer_by_name(token.info)
+#         except pygments.util.ClassNotFound:
+#             lexer = guess_lexer(token.content)
+#         formatter = HtmlFormatter()
+#         parsed_code = pygments.highlight(token.content, lexer, formatter)
+#         return "<pre>" + parsed_code + "</pre>"
         
-    md.add_render_rule("link_open", render_blank_link)
-    md.add_render_rule("fence", parse_fencecode)
+#     md.add_render_rule("link_open", render_blank_link)
+#     md.add_render_rule("fence", parse_fencecode)
 
-    return md
+#     return md
 
 
 class MyChatbot(Chatbot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.md = my_get_markdown_parser()
+        # self.md = my_get_markdown_parser()
 
     # def postprocess(
     #     self, y: List[Tuple[str, str]]
